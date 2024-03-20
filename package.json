@@ -1,0 +1,25 @@
+{
+  "name": "wgpu3d",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "build": "webpack --config webpack.config.js",
+    "build-w": "webpack --config webpack.config.js --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "wgpu-matrix": "^2.5.1"
+  },
+  "devDependencies": {
+    "@webgpu/types": "^0.1.40",
+    "raw-loader": "^4.0.2",
+    "ts-loader": "^9.4.4",
+    "typescript": "^5.2.2",
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4"
+  }
+}
