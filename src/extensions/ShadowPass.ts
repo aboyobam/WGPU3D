@@ -19,15 +19,15 @@ class ShadowRendererSceneExtension extends Extension<Scene> {
     mapsY: number;
 
     initialized = false;
-    private setup(device: GPUDevice) {
+    private setup(device: GPUDevice, scene: Scene) {
         if (this.initialized) {
             return;
         }
 
         this.initialized = true;
 
-        const numX = Math.ceil(Math.sqrt(this.shadowPass.opts.maxNumShadowMaps));
-        const numY = Math.ceil(this.shadowPass.opts.maxNumShadowMaps / numX);
+        const numX = Math.ceil(Math.sqrt(scene.maxNumLights));
+        const numY = Math.ceil(scene.maxNumLights / numX);
         this.mapsX = numX;
         this.mapsY = numY;
 
@@ -52,7 +52,7 @@ class ShadowRendererSceneExtension extends Extension<Scene> {
                 return;
             }
 
-            this.setup(device);
+            this.setup(device, this.__host);
             this.__host.shadowTextureView = this.shadowDepthTextureView;
         });
     }
@@ -189,5 +189,5 @@ export default class ShadowPass {
 
 interface ShadowPassOptions {
     shadowTextureSize: number;
-    maxNumShadowMaps: number;
+    //maxNumShadowMaps: number;
 }

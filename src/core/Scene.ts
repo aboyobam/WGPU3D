@@ -1,5 +1,6 @@
 import Light from "@/lights/Light";
 import Object3D from "./Object3D";
+import ShadowLight from "@/lights/ShadowLight";
 
 export default class Scene extends Object3D {
     _isScene: boolean = true;
@@ -12,6 +13,7 @@ export default class Scene extends Object3D {
     private lightBuffer: GPUBuffer;
     private lightCountBuffer: GPUBuffer;
     shadowTextureView: GPUTextureView;
+    shadowIndicesBuffer: GPUBuffer;
 
     mount(device: GPUDevice) {
         if (this.lightBindGroup) {
@@ -39,6 +41,11 @@ export default class Scene extends Object3D {
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
         });
 
+        this.shadowIndicesBuffer = device.createBuffer({
+            size: this.opts.maxNumLights * Uint32Array.BYTES_PER_ELEMENT,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+        });
+
         this.lightBindGroup = device.createBindGroup({
             layout: Light.getBindGroupLayout(device),
             entries: [
@@ -63,6 +70,11 @@ export default class Scene extends Object3D {
                     resource: device.createSampler({
                         compare: "less"
                     })
+                },{
+                    binding: 4,
+                    resource: {
+                        buffer: this.shadowIndicesBuffer
+                    }                    
                 }
             ]
         });
@@ -90,6 +102,16 @@ export default class Scene extends Object3D {
             lightData.set(light.asBuffer, i * Light.MEMORY_SIZE);
         }
         device.queue.writeBuffer(this.lightBuffer, 0, lightData);
+
+        const shadowIndices = new Uint32Array(this.shadowIndicesBuffer.size / Uint32Array.BYTES_PER_ELEMENT);
+        let shadowMapIndex = 0;
+        for (let index = 0; index < lights.length; index++) {
+            const light = lights[index];
+            if (light instanceof ShadowLight) {
+                shadowIndices[index] = shadowMapIndex++;
+            }
+        }
+        device.queue.writeBuffer(this.shadowIndicesBuffer, 0, shadowIndices);
     }
 
     get maxNumLights() {

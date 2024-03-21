@@ -5,6 +5,7 @@ import Mesh from "./Mesh/Mesh";
 import Scene from "./Scene";
 import DrawOperation from "./DrawOperation";
 import Extension from "@/extensions/Extension";
+import dirty from "@/util/dirty";
 
 export default class Object3D extends Extension.Host {
     protected readonly _isObject3D: boolean = true;
@@ -27,12 +28,14 @@ export default class Object3D extends Extension.Host {
     readonly transform: Transform;
     parent: Object3D;
     children: Object3D[] = [];
-    castShadow = false;
+    @dirty declare castShadow: boolean;
     name: string;
+    declare dirty: boolean;
     
     constructor() {
         super();
         this.transform = new Transform();
+        this.castShadow = false;
     }
 
     add(...children: Object3D[]): void {

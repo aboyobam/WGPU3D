@@ -16,6 +16,9 @@ override maxNumLights: u32;
 @group(3) @binding(2) var shadowMap: texture_depth_2d;
 @group(3) @binding(3) var shadowSampler: sampler_comparison;
 
+// DUMMY
+@group(3) @binding(4) var<storage> shadowMapIndices: array<u32>;
+
 struct VertexOutput {
     @builtin(position) position: vec4f,
     @location(0) fragPosition: vec4f, // World position
@@ -30,7 +33,8 @@ struct Light {
     matrix: mat4x4f
 }
 
-fn calcPointLight(light: Light, fragPosition: vec3f, normal: vec3f) -> vec3f {
+fn calcPointLight(lightIndex: u32, fragPosition: vec3f, normal: vec3f) -> vec3f {
+    let light = lights[lightIndex];
     let intensity = light.data[1];
     let decay = light.data[2];
     let lightDirection = normalize(light.position.xyz - fragPosition);
@@ -41,8 +45,9 @@ fn calcPointLight(light: Light, fragPosition: vec3f, normal: vec3f) -> vec3f {
     return diffuse;
 }
 
-fn calcSunLight(light: Light, fragPosition: vec4f, normal: vec3f) -> vec3f {
-    let visibility = select(calcShadowVisibility(light.matrix, fragPosition), 1.0, light.data[2] == 0.0);
+fn calcSunLight(lightIndex: u32, fragPosition: vec4f, normal: vec3f) -> vec3f {
+    let light = lights[lightIndex];
+    let visibility = select(calcShadowVisibility(lightIndex, fragPosition), 1.0, light.data[2] == 0.0);
     let intensity = light.data[1];
 
     let direction = light.position.xyz;
@@ -51,8 +56,9 @@ fn calcSunLight(light: Light, fragPosition: vec4f, normal: vec3f) -> vec3f {
     return diffuse * intensity * visibility;
 }
 
-fn calcSpotLight(light: Light, fragPosition: vec4f, normal: vec3f) -> vec3f {
-    let visibility = select(calcShadowVisibility(light.matrix, fragPosition), 1.0, light.data[9] == 0.0);
+fn calcSpotLight(lightIndex: u32, fragPosition: vec4f, normal: vec3f) -> vec3f {
+    let light = lights[lightIndex];
+    let visibility = select(calcShadowVisibility(lightIndex, fragPosition), 1.0, light.data[9] == 0.0);
 
     let intensity = light.data[1];
     let decay = light.data[2];
@@ -81,7 +87,11 @@ fn calcSpotLight(light: Light, fragPosition: vec4f, normal: vec3f) -> vec3f {
     }
 }
 
-fn calcShadowVisibility(matrix: mat4x4f, fragPosition: vec4f) -> f32 {
+fn calcShadowVisibility(lightIndex: u32, fragPosition: vec4f) -> f32 {
+    let matrix = lights[lightIndex].matrix;
+    let shadowMapIndex = shadowMapIndices[lightIndex];
+    let shadowMapX: u32 = shadowMapIndex % mapsX;
+    let shadowMapY: u32 = shadowMapIndex / mapsX;
     let ax = f32(mapsX + mapsY + maxNumLights); // DUMMY, so mapsX and mapsY are not unused
 
     if (hasShadowMap == 0) {
@@ -89,10 +99,16 @@ fn calcShadowVisibility(matrix: mat4x4f, fragPosition: vec4f) -> f32 {
     }
     
     let posFromLight = matrix * fragPosition;
-    let shadowPos = vec3(
+    let shadowPosGlobal = vec3(
         posFromLight.x / posFromLight.w * 0.5 + 0.5,
         posFromLight.y / posFromLight.w * -0.5 + 0.5,
         posFromLight.z / posFromLight.w
+    );
+
+    let shadowPos = vec3(
+        (shadowPosGlobal.x + f32(shadowMapX)) / f32(mapsX),
+        (shadowPosGlobal.y + f32(shadowMapY)) / f32(mapsY),
+        shadowPosGlobal.z
     );
 
     var visibility = 0.0;
@@ -112,13 +128,13 @@ fn calcShadowVisibility(matrix: mat4x4f, fragPosition: vec4f) -> f32 {
     return visibility;
 }
 
-fn calcLight(light: Light, fragPosition: vec4f, normal: vec3f) -> vec3f {
-    let lightType = i32(light.data[0]);
+fn calcLight(lightIndex: u32, fragPosition: vec4f, normal: vec3f) -> vec3f {
+    let lightType = i32(lights[lightIndex].data[0]);
     switch lightType {
-        case 0: { return light.color.xyz; } // Ambient light
-        case 1: { return calcSpotLight(light, fragPosition, normal); } // Spot / Directional light
-        case 3: { return calcPointLight(light, fragPosition.xyz, normal); } // Point light
-        case 4: { return calcSunLight(light, fragPosition, normal); } // Sun light
+        case 0: { return lights[lightIndex].color.xyz; } // Ambient light
+        case 1: { return calcSpotLight(lightIndex, fragPosition, normal); } // Spot / Directional light
+        case 3: { return calcPointLight(lightIndex, fragPosition.xyz, normal); } // Point light
+        case 4: { return calcSunLight(lightIndex, fragPosition, normal); } // Sun light
         default: { return vec3f(0.0); }
     }
 }
@@ -127,7 +143,7 @@ fn calcLight(light: Light, fragPosition: vec4f, normal: vec3f) -> vec3f {
 fn main(input: VertexOutput) -> @location(0) vec4f {
     var color = vec3f(0.0, 0.0, 0.0);
     for (var i = 0u; i < numLights; i++) {
-        color += calcLight(lights[i], input.fragPosition, input.fragNormal);
+        color += calcLight(i, input.fragPosition, input.fragNormal);
     }
 
     let textureColor = textureSample(bitmapTexture, textureSampler, input.fragUV).rgb;

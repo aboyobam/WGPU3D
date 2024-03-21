@@ -34,17 +34,18 @@ navigator.gpu.requestAdapter().then(async adapter => {
     cube.castShadow = true;
     torus.castShadow = true;
 
-    sunLight.intensity = 1.2;
-    sunLight.castShadow = true;
+    sunLight.intensity = 0.8;
     dirLight.castShadow = true;
+    sunLight.castShadow = true;
+    sunLight.target.set(1, 1, 1);
+    sunLight.position.set(0, 20, 0);
     dirLight.intensity = 4;
     dirLight.decay = 0.02;
 
     camera.aspect = canvas.width / canvas.height;
     const renderer = new Renderer(canvas, device);
     const shadowPass = new ShadowPass({
-        shadowTextureSize: 2048,
-        maxNumShadowMaps: 5,
+        shadowTextureSize: 1024,
     });
     renderer.addExtension(shadowPass.rendererExtension);
     scene.addExtension(shadowPass.sceneExtension);

@@ -11,7 +11,6 @@ enum LightType {
 export default class Light extends Object3D {
     static readonly Types = LightType;
     static readonly MEMORY_SIZE = 40;
-    static readonly castShadow: boolean = false;
     
     _isLight = true;
     declare dirty: boolean;
@@ -50,6 +49,13 @@ export default class Light extends Object3D {
                     visibility: GPUShaderStage.FRAGMENT,
                     sampler: {
                         type: "comparison"
+                    }
+                },
+                {
+                    binding: 4,
+                    visibility: GPUShaderStage.FRAGMENT,
+                    buffer: {
+                        type: "read-only-storage"
                     }
                 }
             ]

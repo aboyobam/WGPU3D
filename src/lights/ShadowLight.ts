@@ -3,8 +3,10 @@ import Light from "./Light";
 import Camera from "@/core/Camera/Camera";
 
 export default class ShadowLight extends Light implements UniformBindGroup {
-    static readonly castShadow: boolean = true;
-    castShadow = true;
+    constructor() {
+        super();
+        this.castShadow = true;
+    }
 
     update(): void {
         if (!this.dirty) {

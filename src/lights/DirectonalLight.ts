@@ -2,7 +2,7 @@ import dirty from "@/util/dirty";
 import Light from "./Light";
 import Color from "@/core/Math/Color";
 import Vector3 from "@/core/Math/Vector3";
-import { mat4, vec3 } from "wgpu-matrix";
+import { mat4 } from "wgpu-matrix";
 import ShadowLight from "./ShadowLight";
 
 export default class DirectionalLight extends ShadowLight {
@@ -49,7 +49,6 @@ export default class DirectionalLight extends ShadowLight {
         ]);
 
         data.set(this.lightMatrix, 24);
-
         return data;
     }
 
