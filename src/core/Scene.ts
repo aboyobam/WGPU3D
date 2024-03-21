@@ -11,11 +11,21 @@ export default class Scene extends Object3D {
     lightBindGroup: GPUBindGroup;
     private lightBuffer: GPUBuffer;
     private lightCountBuffer: GPUBuffer;
+    shadowTextureView: GPUTextureView;
 
     mount(device: GPUDevice) {
         if (this.lightBindGroup) {
             this.updateLights(device);
             return;
+        }
+
+        if (!this.shadowTextureView) {
+            const shadowTexture = device.createTexture({
+                size: [1, 1, 1],
+                format: "depth32float",
+                usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+            });
+            this.shadowTextureView = shadowTexture.createView();
         }
 
         this.lightCountBuffer = device.createBuffer({
@@ -42,6 +52,16 @@ export default class Scene extends Object3D {
                     resource: {
                         buffer: this.lightBuffer
                     }
+                },
+                {
+                    binding: 2,
+                    resource: this.shadowTextureView
+                },
+                {
+                    binding: 3,
+                    resource: device.createSampler({
+                        compare: "less"
+                    })
                 }
             ]
         });
@@ -67,9 +87,13 @@ export default class Scene extends Object3D {
         lightData.fill(0);
         for (let i = 0; i < lights.length; i++) {
             const light = lights[i];
-            lightData.set(light.asBuffer, i * 24);
+            lightData.set(light.asBuffer, i * Light.MEMORY_SIZE);
         }
         device.queue.writeBuffer(this.lightBuffer, 0, lightData);
+    }
+
+    get maxNumLights() {
+        return this.opts.maxNumLights;
     }
 }
 

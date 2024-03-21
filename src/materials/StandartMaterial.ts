@@ -2,8 +2,8 @@ import Light from "@/lights/Light";
 import BasicMaterial from "./BasicMaterial";
 import fragmentShader from "./Standart.frag.wgsl";
 import Material from "./Material";
-import Scene from "@/core/Scene";
 import DrawOperation from "@/core/DrawOperation";
+import ShadowPass from "@/extensions/ShadowPass";
 
 export default class StandartMaterial extends BasicMaterial {
     static readonly fragmentShader = fragmentShader;

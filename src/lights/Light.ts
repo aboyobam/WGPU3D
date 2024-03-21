@@ -10,7 +10,8 @@ enum LightType {
 
 export default class Light extends Object3D {
     static readonly Types = LightType;
-    static readonly MEMORY_SIZE = 24;
+    static readonly MEMORY_SIZE = 40;
+    static readonly castShadow: boolean = false;
     
     _isLight = true;
     declare dirty: boolean;
@@ -36,6 +37,20 @@ export default class Light extends Object3D {
                     buffer: {
                         type: "read-only-storage"
                     }
+                },
+                {
+                    binding: 2,
+                    visibility: GPUShaderStage.FRAGMENT,
+                    texture: {
+                        sampleType: "depth"
+                    }
+                },
+                {
+                    binding: 3,
+                    visibility: GPUShaderStage.FRAGMENT,
+                    sampler: {
+                        type: "comparison"
+                    }
                 }
             ]
         });
@@ -53,5 +68,9 @@ export default class Light extends Object3D {
 
     clean() {
         throw new Error("Use a Subclass of Light");
+    }
+
+    get LightClass(): typeof Light {
+        return this.constructor as typeof Light;
     }
 }

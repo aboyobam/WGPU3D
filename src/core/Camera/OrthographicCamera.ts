@@ -6,12 +6,12 @@ import Vector3 from "../Math/Vector3";
 export default class OrthographicCamera extends Camera {
     private static readonly up = new Vector3(0, 1, 0); 
     
-    @dirty left: number;
-    @dirty right: number;
-    @dirty top: number;
-    @dirty bottom: number;
-    @dirty near: number;
-    @dirty far: number = 1000;
+    @dirty declare left: number;
+    @dirty declare right: number;
+    @dirty declare top: number;
+    @dirty declare bottom: number;
+    @dirty declare near: number;
+    @dirty declare far: number;
     
     target = new Vector3(0, 0, 1);
 
@@ -22,6 +22,7 @@ export default class OrthographicCamera extends Camera {
         this.top = top;
         this.bottom = bottom;
         this.near = near;
+        this.far = 1000;
     }
 
     get viewProjectionMatrix() {

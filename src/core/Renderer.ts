@@ -5,10 +5,40 @@ import Object3D from "./Object3D";
 import Scene from "./Scene";
 import vertexShader from "./vertex.wgsl";
 import DrawOperation from "./DrawOperation";
+import Extension from "@/extensions/Extension";
 
-export default class Renderer {
+export default class Renderer extends Extension.Host {
     static readonly presentationFormat: GPUTextureFormat = navigator.gpu?.getPreferredCanvasFormat?.() ?? "bgra8unorm";
     static readonly depthStencilFormat: GPUTextureFormat = "depth24plus-stencil8";
+    static readonly primitiveState: GPUPrimitiveState = {
+        topology: "triangle-list",
+        cullMode: "back"
+    }
+    static readonly vertexBuffers: GPUVertexBufferLayout[] = [
+        {
+            arrayStride: Float32Array.BYTES_PER_ELEMENT * 8,
+            attributes: [
+                {
+                    // position
+                    shaderLocation: 0,
+                    offset: 0,
+                    format: 'float32x3',
+                },
+                {
+                    // normal
+                    shaderLocation: 1,
+                    offset: Float32Array.BYTES_PER_ELEMENT * 3,
+                    format: 'float32x3',
+                },
+                {
+                    // uv
+                    shaderLocation: 2,
+                    offset: Float32Array.BYTES_PER_ELEMENT * 6,
+                    format: 'float32x2'
+                }
+            ],
+        }
+    ];
     
     private readonly context: GPUCanvasContext;
     private readonly depthTexture: GPUTexture;
@@ -17,6 +47,7 @@ export default class Renderer {
     private readonly vertexShader: GPUVertexState;
 
     constructor(public readonly canvas: HTMLCanvasElement, public readonly device: GPUDevice) {
+        super();
         this.context = canvas.getContext("webgpu");
 
         this.context.configure({
@@ -54,29 +85,7 @@ export default class Renderer {
         this.vertexShader = {
             module: device.createShaderModule({ code: vertexShader }),
             entryPoint: "main",
-            buffers: [{
-                arrayStride: Float32Array.BYTES_PER_ELEMENT * 8,
-                attributes: [
-                    {
-                        // position
-                        shaderLocation: 0,
-                        offset: 0,
-                        format: 'float32x3',
-                    },
-                    {
-                        // normal
-                        shaderLocation: 1,
-                        offset: Float32Array.BYTES_PER_ELEMENT * 3,
-                        format: 'float32x3',
-                    },
-                    {
-                        // uv
-                        shaderLocation: 2,
-                        offset: Float32Array.BYTES_PER_ELEMENT * 6,
-                        format: 'float32x2'
-                    }
-                ],
-            }]
+            buffers: Renderer.vertexBuffers
         };
     }
 
@@ -85,18 +94,25 @@ export default class Renderer {
         const textureView = this.context.getCurrentTexture().createView();
         this.colorAttachment.view = textureView;
 
-        const renderPass = commandEncoder.beginRenderPass(this.renderPassDescriptor);
         camera.update();
         scene.mount(this.device);
         
+        this.beginRender(commandEncoder, scene, camera);
+    }
+
+    beginRender(commandEncoder: GPUCommandEncoder, scene: Scene, camera: Camera) {
+        const renderPass = commandEncoder.beginRenderPass(this.renderPassDescriptor);
         const drawOperation = new DrawOperation({
             device: this.device,
             renderPass,
             scene,
-            camera,
-            vertexShader: this.vertexShader
+            viewBgAccessor: camera,
+            vertexShader: this.vertexShader,
+            useMaterials: true,
+            commandEncoder,
+            renderer: this
         });
-        
+
         renderPass.setBindGroup(0, camera.getBindGroup(this.device));
         this.renderObjects(drawOperation, scene);
 
@@ -104,7 +120,7 @@ export default class Renderer {
         this.device.queue.submit([commandEncoder.finish()]);
     }
 
-    private renderObjects(drawOp: DrawOperation, object: Object3D) {
+    renderObjects(drawOp: DrawOperation, object: Object3D) {
         for (const child of object.children) {
             this.renderObjects(drawOp, child);
         }

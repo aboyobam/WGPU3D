@@ -8,6 +8,7 @@ import AmbientLight from "@/lights/AmbientLight";
 import PerspectiveCamera from "@/core/Camera/PerspectiveCamera";
 import Color from "@/core/Math/Color";
 import Vector3 from "@/core/Math/Vector3";
+import ShadowPass from "@/extensions/ShadowPass";
 
 navigator.gpu.requestAdapter().then(async adapter => {
     const device = await adapter.requestDevice();
@@ -20,7 +21,7 @@ navigator.gpu.requestAdapter().then(async adapter => {
     const scene = new Scene({
         maxNumLights: 5
     });
-    
+
     const [cube] = OBJLoader.fromContentsString(cubeOBJ);
 
     const sun = new SunLight(

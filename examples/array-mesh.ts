@@ -15,7 +15,8 @@ navigator.gpu.requestAdapter().then(async adapter => {
 
     const gltf = await GLTFLoader.fromURL("/texcube.gltf", {
         BaseMaterialClass: BasicMaterial,
-        fallbackMaterial: new BasicMaterial({ color: new Color(0.8, 0.8, 0.8) })
+        fallbackMaterial: new BasicMaterial({ color: new Color(0.8, 0.8, 0.8) }),
+        maxNumLights: 1,
     });
 
     const camera = new PerspectiveCamera(45 * Math.PI / 180, canvas.width / canvas.height, 0.1, 100);

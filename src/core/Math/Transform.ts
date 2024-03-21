@@ -1,8 +1,9 @@
 import { mat4 } from "wgpu-matrix";
 import Quaternion from "./Quaternion";
 import Vector3 from "./Vector3";
+import UniformBindGroup from "@/types/UniformBindGroup";
 
-export default class Transform {
+export default class Transform implements UniformBindGroup {
     readonly position: Vector3 = new Vector3();
     readonly scale: Vector3 = new Vector3(1, 1, 1);
     readonly rotation: Quaternion = new Quaternion();

@@ -4,6 +4,7 @@ import dirty from "@/util/dirty";
 import { mat4 } from "wgpu-matrix";
 
 export default class PointLight extends Light {
+    static readonly castShadow = false;
 
     @dirty declare intensity: number;
     @dirty declare decay: number;

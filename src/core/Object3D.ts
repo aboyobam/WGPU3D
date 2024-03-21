@@ -4,8 +4,9 @@ import Transform from "./Math/Transform";
 import Mesh from "./Mesh/Mesh";
 import Scene from "./Scene";
 import DrawOperation from "./DrawOperation";
+import Extension from "@/extensions/Extension";
 
-export default class Object3D {
+export default class Object3D extends Extension.Host {
     protected readonly _isObject3D: boolean = true;
     isObject3D(): this is Object3D { return this._isObject3D; }
 
@@ -28,6 +29,7 @@ export default class Object3D {
     children: Object3D[] = [];
 
     constructor() {
+        super();
         this.transform = new Transform();
     }
 
@@ -43,6 +45,17 @@ export default class Object3D {
             child.parent = this;
             child.transform.parent = this.transform;
             this.children.push(child);
+        }
+    }
+
+    remove(): void {
+        if (this.parent) {
+            const index = this.parent.children.indexOf(this);
+            if (index !== -1) {
+                this.parent.children.splice(index, 1);
+            }
+            this.parent = null;
+            this.transform.parent = null;
         }
     }
 

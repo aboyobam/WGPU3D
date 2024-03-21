@@ -1,20 +1,25 @@
 import PerspectiveCamera from "@/core/Camera/PerspectiveCamera";
 import Geometry from "@/core/Geometry/Geometry";
 import Color from "@/core/Math/Color";
+import Quaternion from "@/core/Math/Quaternion";
+import Vector3 from "@/core/Math/Vector3";
 import CompositeMesh from "@/core/Mesh/CompositeMesh";
 import Mesh from "@/core/Mesh/Mesh";
 import Object3D from "@/core/Object3D";
 import Scene from "@/core/Scene";
+import DirectionalLight from "@/lights/DirectonalLight";
 import PointLight from "@/lights/PointLight";
+import SunLight from "@/lights/SunLight";
 import BasicMaterial from "@/materials/BasicMaterial";
 import Material from "@/materials/Material";
 import StandartMaterial from "@/materials/StandartMaterial";
 import Vertex from "@/types/Vertex";
-import { vec3 } from "wgpu-matrix";
+import { quat, vec3 } from "wgpu-matrix";
 
 interface GLTFLoaderOptions {
     BaseMaterialClass: typeof BasicMaterial | typeof StandartMaterial;
     fallbackMaterial: Material;
+    maxNumLights: number;
 }
 
 export default class GLTFLoader {
@@ -39,7 +44,7 @@ export default class GLTFLoader {
         );
 
         const scene = new Scene({
-            maxNumLights: 20
+            maxNumLights: this.opts.maxNumLights
         });
 
         const gltfScene = this.gltf.scenes[this.gltf.scene];
@@ -80,12 +85,30 @@ export default class GLTFLoader {
         } else if ("KHR_lights_punctual" in node.extensions) {
             const light = this.gltf.extensions["KHR_lights_punctual"].lights[node.extensions["KHR_lights_punctual"].light];
             if (light.type == "point") {
-                object = new PointLight(light.intensity, 1, new Color(light.color[0], light.color[1], light.color[2]));
+                object = new PointLight(light.intensity, 0, new Color(light.color[0], light.color[1], light.color[2]));
+            } else if (light.type == "spot") {
+                const color = new Color(light.color[0], light.color[1], light.color[2]);
+                const intensity = light.intensity;
+                const innerConeAngle = light.spot.innerConeAngle;
+                const outerConeAngle = light.spot.outerConeAngle;
+                const dirLight = new DirectionalLight(intensity, 0, color);
+                dirLight.innerCone = innerConeAngle;
+                dirLight.outerCone = outerConeAngle;
+                const lookDirection = vec3.transformQuat([0, 0, 1], rotation);
+                vec3.sub(translation, lookDirection, lookDirection);
+                dirLight.target.set(lookDirection[0], lookDirection[1], lookDirection[2]);
+                object = dirLight;
+            } else if (light.type == "directional") {
+                const color = new Color(light.color[0], light.color[1], light.color[2]);
+                const intensity = light.intensity;
+                const sunLight = new SunLight(intensity, color, new Vector3(0, 0, 0));
+                const [tx, ty, tz] = vec3.transformQuat([0, 0, -1], rotation);
+                sunLight.direction.set(tx, ty, tz);
+                object = sunLight;
             } else {
                 console.log("Unsupported light type", light.type);
                 object = new Object3D();
             }
-
         }
 
         object.position.set(translation[0], translation[1], translation[2]);

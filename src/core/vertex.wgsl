@@ -2,7 +2,7 @@
 @group(1) @binding(0) var<uniform> modelMatrix : mat4x4f;
 
 struct VertexInput {
-    @location(0) position: vec4f,
+    @location(0) position: vec3f,
     @location(1) normal: vec3f,
     @location(2) uv: vec2f
 }
@@ -18,9 +18,9 @@ struct VertexOutput {
 fn main(input: VertexInput) -> VertexOutput{
     var output: VertexOutput;
 
-    let worldPosition = modelMatrix * input.position;
+    let worldPosition = modelMatrix * vec4(input.position, 1.0);
     output.position = cameraMatrix * worldPosition;
-    output.fragPosition = worldPosition; // 0.5 * (input.position + vec4f(1.0));
+    output.fragPosition = worldPosition;
     output.fragUV = input.uv;
     output.fragNormal = (modelMatrix * vec4f(input.normal, 0.0)).xyz;
     

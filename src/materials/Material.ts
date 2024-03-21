@@ -36,10 +36,7 @@ export default abstract class Material {
                 targets: [{ format: Renderer.presentationFormat }],
                 entryPoint: "main"
             },
-            primitive: {
-                topology: "triangle-list",
-                cullMode: "back"
-            }
+            primitive: Renderer.primitiveState
         }).then(pipeline => {
             Material.mounted.set(this, pipeline);
             callback?.();

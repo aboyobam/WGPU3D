@@ -3,6 +3,7 @@ import Light from "./Light";
 import dirty from "@/util/dirty";
 
 export default class AmbientLight extends Light {
+    static readonly castShadow = false;
     @dirty declare intensity: number;
 
     constructor(public readonly color: Color, intensity: number) {

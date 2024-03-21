@@ -1,6 +1,7 @@
+import UniformBindGroup from "@/types/UniformBindGroup";
 import Object3D from "../Object3D";
 
-export default class Camera extends Object3D {
+export default class Camera extends Object3D implements UniformBindGroup {
     _isCamera = true;
 
     get viewProjectionMatrix(): Float32Array {
@@ -20,13 +21,6 @@ export default class Camera extends Object3D {
                     buffer: {
                         type: "uniform"
                     }
-                },
-                {
-                    binding: 1,
-                    visibility: GPUShaderStage.FRAGMENT,
-                    buffer: {
-                        type: "uniform"
-                    }
                 }
             ]
         });
@@ -35,7 +29,6 @@ export default class Camera extends Object3D {
     }
 
     private bindGroup: GPUBindGroup;
-    private positionBuffer: GPUBuffer;
     private viewMatrixBuffer: GPUBuffer;
     private device: GPUDevice;
     declare dirty: boolean;
@@ -50,11 +43,6 @@ export default class Camera extends Object3D {
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
         });
 
-        this.positionBuffer = device.createBuffer({
-            size: 4 * Float32Array.BYTES_PER_ELEMENT, // vec4f
-            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-        });
-
         const bindGroupLayout = Camera.getBindGroupLayout(device);
 
         this.bindGroup = device.createBindGroup({
@@ -66,12 +54,6 @@ export default class Camera extends Object3D {
                         buffer: this.viewMatrixBuffer
                     }
                 },
-                {
-                    binding: 1,
-                    resource: {
-                        buffer: this.positionBuffer
-                    }
-                }
             ]
         });
 
@@ -88,7 +70,6 @@ export default class Camera extends Object3D {
 
         this.clean();
         console.log("Updating camera");
-        this.device.queue.writeBuffer(this.positionBuffer, 0, this.transform.position.asBuffer);
         this.device.queue.writeBuffer(this.viewMatrixBuffer, 0, this.viewProjectionMatrix);
     }
 

@@ -27,6 +27,10 @@ export default class Vector3 {
         return this;
     }
 
+    neg() {
+        return new Vector3(-this.x, -this.y, -this.z);
+    }
+
     translate(x: number, y: number, z: number): void {
         this.x += x;
         this.y += y;
