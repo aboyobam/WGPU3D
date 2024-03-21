@@ -11,8 +11,14 @@ import PointLight from "@/lights/PointLight";
 import BasicMaterial from "@/materials/BasicMaterial";
 import ShadowPass from "@/extensions/ShadowPass";
 import Light from "@/lights/Light";
+import DebugMesh from "@/core/DebugMesh";
+import Mesh from "@/core/Mesh/Mesh";
+import Quaternion from "@/core/Math/Quaternion";
+import Extension from "@/extensions/Extension";
+import Camera from "@/core/Camera/Camera";
 
 navigator.gpu.requestAdapter().then(async adapter => {
+    await new Promise(r => setTimeout(r, 1000));
     const device = await adapter.requestDevice();
     const canvas = document.querySelector("canvas");
 
@@ -23,99 +29,45 @@ navigator.gpu.requestAdapter().then(async adapter => {
     });
 
     const [camera] = gltf.readObjects(PerspectiveCamera);
+    const [, cube] = gltf.readObjects(Mesh);
+    camera.target.set(0, 0, 0);
 
     for (const light of gltf.readObjects(Light)) {
         if (light instanceof SunLight) {
             light.intensity = 1.5;
             light.position.y = 5;
+
+            light.position.copy(camera.position);
+            light.target.copy(camera.target);
+
+            light.target.x += 10;
         } else {
             light.remove();
         }
     }
 
+    class CamExtension extends Extension<Camera> {
+        init(): void {}
+    }
+
+    Extension.provide(Camera, CamExtension);
+
     camera.aspect = canvas.width / canvas.height;
     const renderer = new Renderer(canvas, device);
-    const shadowPass = new ShadowPass(256);
-    // gltf.addExtension(shadowPass.sceneExtension);
-    // renderer.addExtension(shadowPass.rendererExtension);
+    const shadowPass = new ShadowPass(1024);
+    renderer.addExtension(shadowPass.rendererExtension);
+    gltf.addExtension(shadowPass.sceneExtension);
+
+    const dbm = new DebugMesh();
+    //gltf.add(dbm);
 
     function draw() {
+        cube.rotation.rotateY(0.01);
         renderer.render(camera, gltf);
         requestAnimationFrame(draw);
     }
 
     requestAnimationFrame(draw);
-
-    /*
-    let done = false;
-    function downloadX() {
-        done = true;
-        const ctx = canvas.getContext('webgpu');
-        requestAnimationFrame(() => {
-            const commandEncoder = device.createCommandEncoder();
-            const renderPassDescriptor: GPURenderPassDescriptor = {
-                colorAttachments: [{
-                    view: ctx.getCurrentTexture().createView(),
-                    clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
-                    loadOp: 'clear',
-                    storeOp: 'store',
-                }],
-            };
-
-            const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
-            const bgl = device.createBindGroupLayout({
-                entries: [
-                    {
-                        binding: 0,
-                        visibility: GPUShaderStage.FRAGMENT,
-                        sampler: { type: 'comparison' }
-                    },
-                    {
-                        binding: 1,
-                        visibility: GPUShaderStage.FRAGMENT,
-                        texture: { sampleType: 'depth' }
-                    }
-                ]
-            });
-
-            passEncoder.setPipeline(device.createRenderPipeline({
-                layout: device.createPipelineLayout({
-                    bindGroupLayouts: [bgl]
-                }),
-                vertex: {
-                    module: device.createShaderModule({ code: shaderCode }),
-                    entryPoint: 'vs_main'
-                },
-                fragment: {
-                    module: device.createShaderModule({ code: shaderCode }),
-                    entryPoint: 'fs_main',
-                    targets: [{
-                        format: 'bgra8unorm',
-                    }]
-                },
-
-            }));
-            // Set the texture view and sampler
-            passEncoder.setBindGroup(0, device.createBindGroup({
-                layout: bgl,
-                entries: [
-                    {
-                        binding: 0,
-                        resource: device.createSampler({ compare: 'less' })
-                    },
-                    {
-                        binding: 1,
-                        resource: shadowPass.shadowRendererExtension['shadowDepthTextureView']
-                    }
-                ]
-            }));
-            passEncoder.draw(6);
-            passEncoder.end();
-            device.queue.submit([commandEncoder.finish()]);
-        });  
-    }
-
-    (window as any).dlx = downloadX;*/
 });
 
 const shaderCode = `

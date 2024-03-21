@@ -103,7 +103,7 @@ export default class GLTFLoader {
                 const intensity = light.intensity;
                 const sunLight = new SunLight(intensity, color, new Vector3(0, 0, 0));
                 const [tx, ty, tz] = vec3.transformQuat([0, 0, -1], rotation);
-                sunLight.direction.set(tx, ty, tz);
+                sunLight.target.set(tx, ty, tz);
                 object = sunLight;
             } else {
                 console.log("Unsupported light type", light.type);

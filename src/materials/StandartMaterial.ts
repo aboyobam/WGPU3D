@@ -3,17 +3,30 @@ import BasicMaterial from "./BasicMaterial";
 import fragmentShader from "./Standart.frag.wgsl";
 import Material from "./Material";
 import DrawOperation from "@/core/DrawOperation";
+import Renderer from "@/core/Renderer";
 import ShadowPass from "@/extensions/ShadowPass";
 
 export default class StandartMaterial extends BasicMaterial {
-    static readonly fragmentShader = fragmentShader;
-
-    static mount(device: GPUDevice, vertex: GPUVertexState, layouts: GPUBindGroupLayout[], callback?: () => void) {
-        Material.mount.call(this, device, vertex, [
+    static mount(drawOp: DrawOperation, layouts: GPUBindGroupLayout[], callback?: () => void) {
+        Material.mount.call(this, drawOp, [
             ...layouts,
-            BasicMaterial.getImageBindingGroupLayout(device),
-            Light.getBindGroupLayout(device)
+            BasicMaterial.getImageBindingGroupLayout(drawOp.device),
+            Light.getBindGroupLayout(drawOp.device)
         ], callback);
+    }
+
+    protected static getFragmentShader(drawOp: DrawOperation): GPUFragmentState {
+        const shadowExt = drawOp.scene.getExtension(ShadowPass.ShadowRendererSceneExtension);
+
+        return {
+            module: drawOp.device.createShaderModule({ code: fragmentShader, }),
+            targets: [{ format: Renderer.presentationFormat }],
+            entryPoint: "main",
+            constants: {
+                hasShadowMap: shadowExt ? 1 : 0,
+                shadowDepthTextureSize: shadowExt?.shadowPass.shadowTextureSize ?? 1
+            }
+        };
     }
 
     use(drawOp: DrawOperation): boolean {

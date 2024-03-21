@@ -1,12 +1,26 @@
 class ExtensionHost {
+    private __extensions: Extension<this>[] = [];
     addExtension<E extends Extension<typeof this>>(extension: E): void {
         extension.__host = this;
         extension.init();
+        this.__extensions.push(extension);
+    }
+
+    getExtension<C extends abstract new (...args: any) => Extension<this>>(ExtensionClass: C): InstanceType<C> {
+        return this.__extensions.find(ext => ext instanceof ExtensionClass) as InstanceType<C>;
     }
 }
 
 export default abstract class Extension<T extends ExtensionHost> {
     static readonly Host = ExtensionHost;
+
+    static provide<C extends typeof ExtensionHost>(TargetClass: C, ExtensionClass: typeof Extension<InstanceType<C>>) {
+
+    }
+
+    static provideInstance<C extends typeof ExtensionHost>(TargetClass: C, ext: Extension<InstanceType<C>>) {
+        
+    }
     
     declare __host: T;
     abstract init(): void;

@@ -21,7 +21,8 @@ export default class Scene extends Object3D {
 
         if (!this.shadowTextureView) {
             const shadowTexture = device.createTexture({
-                size: [1, 1, 1],
+                label: "fallback-shadow-texture",
+                size: { width: 1, height: 1, depthOrArrayLayers: 1 },
                 format: "depth32float",
                 usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
             });
@@ -80,7 +81,6 @@ export default class Scene extends Object3D {
             light.clean();
         });
 
-        console.log("Updating lights");
         device.queue.writeBuffer(this.lightCountBuffer, 0, new Uint32Array([lights.length]));
 
         const lightData = new Float32Array(this.lightBuffer.size / Float32Array.BYTES_PER_ELEMENT);

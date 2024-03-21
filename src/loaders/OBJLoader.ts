@@ -19,10 +19,7 @@ export default class OBJLoader {
 
         for (const result of results) {
             const geometry = new Geometry(result.positions);
-            const material = new StandartMaterial({
-                color: new Color(1, 1, 1)
-            });
-            const mesh = new Mesh(geometry, material);
+            const mesh = new Mesh(geometry);
             meshes.push(mesh);
         }
 

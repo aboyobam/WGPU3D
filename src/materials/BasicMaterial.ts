@@ -1,12 +1,10 @@
 import Material from "./Material";
 import fragmentShader from "./BasicMaterial.frag.wgsl";
 import Renderer from "@/core/Renderer";
-import Scene from "@/core/Scene";
 import Color from "@/core/Math/Color";
 import DrawOperation from "@/core/DrawOperation";
 
 export default class BasicMaterial extends Material {
-    static readonly fragmentShader = fragmentShader;
     private texture: GPUTexture;
     private sampler: GPUSampler;
     private initialized = false;
@@ -40,10 +38,18 @@ export default class BasicMaterial extends Material {
         return this.imageBindGroupLayout;
     }
 
-    static mount(device: GPUDevice, vertex: GPUVertexState, layouts: GPUBindGroupLayout[], callback?: () => void) {        
-        Material.mount.call(this, device, vertex, [
+    protected static getFragmentShader(drawOp: DrawOperation): GPUFragmentState {
+        return {
+            module: drawOp.device.createShaderModule({ code: fragmentShader }),
+            targets: [{ format: Renderer.presentationFormat }],
+            entryPoint: "main"
+        };
+    }
+
+    static mount(drawOp: DrawOperation, layouts: GPUBindGroupLayout[], callback?: () => void) {        
+        Material.mount.call(this, drawOp, [
             ...layouts,
-            BasicMaterial.getImageBindingGroupLayout(device)
+            BasicMaterial.getImageBindingGroupLayout(drawOp.device)
         ], callback);
     }
 
@@ -92,7 +98,11 @@ export default class BasicMaterial extends Material {
             this.initialized = true;
 
             this.texture = device.createTexture({
-                size: [this.bitmap.width, this.bitmap.height, 1],
+                size: {
+                    width: this.bitmap.width,
+                    height: this.bitmap.height,
+                    depthOrArrayLayers: 1
+                },
                 format: Renderer.presentationFormat,
                 usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT
             });

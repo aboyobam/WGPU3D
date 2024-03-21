@@ -58,7 +58,7 @@ export default class Renderer extends Extension.Host {
 
         this.depthTexture = device.createTexture({
             format: Renderer.depthStencilFormat,
-            size: [canvas.width, canvas.height],
+            size: { width: canvas.width, height: canvas.height},
             usage: GPUTextureUsage.RENDER_ATTACHMENT
         });
 
@@ -83,7 +83,9 @@ export default class Renderer extends Extension.Host {
         };
 
         this.vertexShader = {
-            module: device.createShaderModule({ code: vertexShader }),
+            module: device.createShaderModule({
+                code: vertexShader
+            }),
             entryPoint: "main",
             buffers: Renderer.vertexBuffers
         };
@@ -91,8 +93,7 @@ export default class Renderer extends Extension.Host {
 
     render(camera: Camera, scene: Scene) {
         const commandEncoder = this.device.createCommandEncoder();
-        const textureView = this.context.getCurrentTexture().createView();
-        this.colorAttachment.view = textureView;
+
 
         camera.update();
         scene.mount(this.device);
@@ -101,6 +102,9 @@ export default class Renderer extends Extension.Host {
     }
 
     beginRender(commandEncoder: GPUCommandEncoder, scene: Scene, camera: Camera) {
+        const textureView = this.context.getCurrentTexture().createView();
+        this.colorAttachment.view = textureView;
+        
         const renderPass = commandEncoder.beginRenderPass(this.renderPassDescriptor);
         const drawOperation = new DrawOperation({
             device: this.device,

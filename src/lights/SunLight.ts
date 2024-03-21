@@ -3,7 +3,7 @@ import Light from "./Light";
 import dirty from "@/util/dirty";
 import Color from "@/core/Math/Color";
 import ShadowLight from "./ShadowLight";
-import { mat4 } from "wgpu-matrix";
+import { mat4, vec3 } from "wgpu-matrix";
 
 export default class SunLight extends ShadowLight {
     static readonly castShadow = true;
@@ -13,7 +13,7 @@ export default class SunLight extends ShadowLight {
     constructor(
         intensity: number,
         public color: Color,
-        public direction: Vector3
+        public target: Vector3
     ) {
         super();
         this.intensity = intensity;
@@ -21,17 +21,17 @@ export default class SunLight extends ShadowLight {
 
     get asBuffer() {
         const data = new Float32Array(Light.MEMORY_SIZE);
+        const [dx, dy, dz] = vec3.normalize(vec3.sub(this.position.asBuffer, this.target.asBuffer));
         data.set([
-            this.direction.x,
-            this.direction.y,
-            this.direction.z,
+            dx, dy, dz,
             0,
             this.color.r,
             this.color.g,
             this.color.b,
+            0,
             Light.Types.Sun,
-            this.intensity
-        ], 0);
+            this.intensity,
+        ]);
 
         data.set(this.lightMatrix, 24);
 
@@ -39,25 +39,20 @@ export default class SunLight extends ShadowLight {
     }
 
     get isDirty() {
-        return this.dirty || this.color.dirty || this.position.dirty || this.direction.dirty;
+        return this.dirty || this.color.dirty || this.position.dirty || this.target.dirty;
     }
 
     clean() {
         this.dirty = false;
         this.color.dirty = false;
         this.position.dirty = false;
-        this.direction.dirty = false;
+        this.target.dirty = false;
     }
 
     get lightMatrix(): Float32Array {
-        /*const [dx, dy, dz] = this.direction.asBuffer;
-        
-        const lightViewMatrix = mat4.lookAt([dx * -10, dy * -10, dz * -10], this.direction.asBuffer, [0, 1, 0]);
-        const lightProjectionMatrix = mat4.ortho(-100, 100, -100, 100, 1, 100); // DUMMY
-        return mat4.multiply(lightProjectionMatrix, lightViewMatrix) as Float32Array;*/
 
-        const lightViewMatrix = mat4.lookAt([0, 7, -12], [0, 0, 0], [0, 1, 0]);
-        const lightProjectionMatrix = mat4.perspective(45 / 180 * Math.PI, 1, 1, 100);
+        const lightViewMatrix = mat4.lookAt(this.position.asBuffer, this.target.asBuffer, [0, 1, 0]);
+        const lightProjectionMatrix = mat4.ortho(-20, 20, -20, 20, 1, 200);
         return mat4.multiply(lightProjectionMatrix, lightViewMatrix) as Float32Array;
     }
 }

@@ -40,7 +40,7 @@ export default class DrawOperation {
         
         const mountedListeners = Array.from(this._materialMountedCallbacks);
 
-        material.MaterialClass.mount(this.device, this.vertexShader, [
+        material.MaterialClass.mount(this, [
             Camera.getBindGroupLayout(this.device), // camera
             Transform.getBindGroupLayout(this.device), // transform
         ], () => {

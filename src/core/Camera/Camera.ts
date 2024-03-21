@@ -14,10 +14,11 @@ export default class Camera extends Object3D implements UniformBindGroup {
         }
 
         this.bindGroupLayout = device.createBindGroupLayout({
+            label: "camera-bind-group-layout",
             entries: [
                 {
                     binding: 0,
-                    visibility: GPUShaderStage.VERTEX,
+                    visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, // DUMMY fragment stage
                     buffer: {
                         type: "uniform"
                     }
@@ -69,7 +70,6 @@ export default class Camera extends Object3D implements UniformBindGroup {
         }
 
         this.clean();
-        console.log("Updating camera");
         this.device.queue.writeBuffer(this.viewMatrixBuffer, 0, this.viewProjectionMatrix);
     }
 

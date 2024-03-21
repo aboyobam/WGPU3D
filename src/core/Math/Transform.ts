@@ -25,7 +25,7 @@ export default class Transform implements UniformBindGroup {
             entries: [
                 {
                     binding: 0,
-                    visibility: GPUShaderStage.VERTEX,
+                    visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, // DUMMY fragment
                     buffer: {
                         type: "uniform"
                     }
@@ -79,7 +79,6 @@ export default class Transform implements UniformBindGroup {
         }
         
         this.clean();
-        console.log("Updating transform");
         this.device.queue.writeBuffer(this.gpuBuffer, 0, this.asBuffer);
     }
 
