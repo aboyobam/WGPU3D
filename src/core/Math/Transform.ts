@@ -25,7 +25,7 @@ export default class Transform implements UniformBindGroup {
             entries: [
                 {
                     binding: 0,
-                    visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, // DUMMY fragment
+                    visibility: GPUShaderStage.VERTEX,
                     buffer: {
                         type: "uniform"
                     }

@@ -31,6 +31,7 @@ export default class SunLight extends ShadowLight {
             0,
             Light.Types.Sun,
             this.intensity,
+            this.castShadow ? 1 : 0,
         ]);
 
         data.set(this.lightMatrix, 24);

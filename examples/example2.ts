@@ -3,93 +3,56 @@ import GLTFLoader from "@/loaders/GLTFLoader";
 import StandartMaterial from "@/materials/StandartMaterial";
 import PerspectiveCamera from "@/core/Camera/PerspectiveCamera";
 import Color from "@/core/Math/Color";
-import DirectionalLight from "@/lights/DirectonalLight";
-import AmbientLight from "@/lights/AmbientLight";
-import SunLight from "@/lights/SunLight";
-import Vector3 from "@/core/Math/Vector3";
-import PointLight from "@/lights/PointLight";
 import BasicMaterial from "@/materials/BasicMaterial";
 import ShadowPass from "@/extensions/ShadowPass";
-import Light from "@/lights/Light";
-import DebugMesh from "@/core/DebugMesh";
+import SunLight from "@/lights/SunLight";
+import DirectionalLight from "@/lights/DirectonalLight";
+import AmbientLight from "@/lights/AmbientLight";
 import Mesh from "@/core/Mesh/Mesh";
-import Quaternion from "@/core/Math/Quaternion";
-import Extension from "@/extensions/Extension";
-import Camera from "@/core/Camera/Camera";
 
 navigator.gpu.requestAdapter().then(async adapter => {
     await new Promise(r => setTimeout(r, 1000));
     const device = await adapter.requestDevice();
     const canvas = document.querySelector("canvas");
 
-    const gltf = await GLTFLoader.fromURL("/ex3.gltf", {
+    const scene = await GLTFLoader.fromURL("/scene2.gltf", {
         BaseMaterialClass: StandartMaterial,
         fallbackMaterial: new BasicMaterial({ color: new Color(1, 1, 1) }),
-        maxNumLights: 1,
+        maxNumLights: 5,
     });
 
-    const [camera] = gltf.readObjects(PerspectiveCamera);
-    const [, cube] = gltf.readObjects(Mesh);
-    camera.target.set(0, 0, 0);
+    const [camera] = scene.readObjects(PerspectiveCamera);
+    const [sunLight] = scene.readObjects(SunLight);
+    const [dirLight] = scene.readObjects(DirectionalLight);
+    scene.add(new AmbientLight(new Color(1, 1, 1), 0.2));
 
-    for (const light of gltf.readObjects(Light)) {
-        if (light instanceof SunLight) {
-            light.intensity = 1.5;
-            light.position.y = 5;
+    const meshes = Array.from(scene.readObjects(Mesh));
+    const suzanne = meshes.find(mesh => mesh.name === "Suzanne");
+    const cube = meshes.find(mesh => mesh.name === "Cube");
+    const torus = meshes.find(mesh => mesh.name === "Torus");
+    suzanne.castShadow = true;
+    cube.castShadow = true;
+    torus.castShadow = true;
 
-            light.position.copy(camera.position);
-            light.target.copy(camera.target);
-
-            light.target.x += 10;
-        } else {
-            light.remove();
-        }
-    }
-
-    class CamExtension extends Extension<Camera> {
-        init(): void {}
-    }
-
-    Extension.provide(Camera, CamExtension);
+    sunLight.intensity = 1.2;
+    sunLight.castShadow = true;
+    dirLight.castShadow = true;
+    dirLight.intensity = 4;
+    dirLight.decay = 0.02;
 
     camera.aspect = canvas.width / canvas.height;
     const renderer = new Renderer(canvas, device);
-    const shadowPass = new ShadowPass(1024);
+    const shadowPass = new ShadowPass({
+        shadowTextureSize: 2048,
+        maxNumShadowMaps: 5,
+    });
     renderer.addExtension(shadowPass.rendererExtension);
-    gltf.addExtension(shadowPass.sceneExtension);
-
-    const dbm = new DebugMesh();
-    //gltf.add(dbm);
+    scene.addExtension(shadowPass.sceneExtension);
 
     function draw() {
-        cube.rotation.rotateY(0.01);
-        renderer.render(camera, gltf);
+        renderer.render(camera, scene);
         requestAnimationFrame(draw);
     }
 
     requestAnimationFrame(draw);
 });
-
-const shaderCode = `
-@group(0) @binding(0) var mySampler : sampler_comparison;
-@group(0) @binding(1) var myTexture : texture_depth_2d;
-
-@vertex
-fn vs_main(@builtin(vertex_index) vertexIndex: u32) -> @builtin(position) vec4<f32> {
-    var pos = array<vec2<f32>, 6>(
-        vec2<f32>(-1.0, -1.0),
-        vec2<f32>(1.0, -1.0),
-        vec2<f32>(-1.0, 1.0),
-        vec2<f32>(-1.0, 1.0),
-        vec2<f32>(1.0, -1.0),
-        vec2<f32>(1.0, 1.0));
-
-    return vec4<f32>(pos[vertexIndex], 0.0, 1.0);
-}
-
-@fragment
-fn fs_main(@builtin(position) pos: vec4f) -> @location(0) vec4<f32> {
-    let v = textureSampleCompare(myTexture, mySampler, vec2f(pos.x, pos.y), 0.01);
-    return vec4<f32>(v, 0.0, 0.0, 1.0);
-}
-`;

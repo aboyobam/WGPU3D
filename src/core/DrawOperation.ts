@@ -4,6 +4,7 @@ import Camera from "./Camera/Camera";
 import Transform from "./Math/Transform";
 import UniformBindGroup from "@/types/UniformBindGroup";
 import Renderer from "./Renderer";
+import Object3D from "./Object3D";
 
 export default class DrawOperation {
     readonly device: GPUDevice;
@@ -13,6 +14,7 @@ export default class DrawOperation {
     readonly vertexShader: GPUVertexState;
     readonly renderer: Renderer;
     readonly commandEncoder: GPUCommandEncoder;
+    readonly filter?: (object: Object3D) => boolean;
 
     private readonly useMaterials: boolean;
     private _materialMountedCallbacks: Set<() => void> = new Set();
@@ -26,6 +28,7 @@ export default class DrawOperation {
         this.useMaterials = options.useMaterials;
         this.renderer = options.renderer;
         this.commandEncoder = options.commandEncoder;
+        this.filter = options.filter || (() => true);
     }
 
     onMaterialMounted(callback: () => void) {
@@ -84,4 +87,5 @@ interface DrawOperationOptions {
     useMaterials: boolean;
     renderer: Renderer;
     commandEncoder: GPUCommandEncoder;
+    filter?: (object: Object3D) => boolean;
 }

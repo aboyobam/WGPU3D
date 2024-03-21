@@ -27,7 +27,9 @@ export default class Object3D extends Extension.Host {
     readonly transform: Transform;
     parent: Object3D;
     children: Object3D[] = [];
-
+    castShadow = false;
+    name: string;
+    
     constructor() {
         super();
         this.transform = new Transform();

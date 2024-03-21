@@ -130,6 +130,8 @@ export default class Renderer extends Extension.Host {
         }
 
         object.transform.update();
-        object.draw(drawOp);
+        if (drawOp.filter(object)) {
+            object.draw(drawOp);
+        }
     }
 }

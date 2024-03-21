@@ -15,19 +15,27 @@ class ShadowRendererSceneExtension extends Extension<Scene> {
     shadowDepthTextureView: GPUTextureView;
     private shadowDepthTexture: GPUTexture;
 
+    mapsX: number;
+    mapsY: number;
+
     initialized = false;
-    private setup(scene: Scene, device: GPUDevice) {
+    private setup(device: GPUDevice) {
         if (this.initialized) {
             return;
         }
 
         this.initialized = true;
 
+        const numX = Math.ceil(Math.sqrt(this.shadowPass.opts.maxNumShadowMaps));
+        const numY = Math.ceil(this.shadowPass.opts.maxNumShadowMaps / numX);
+        this.mapsX = numX;
+        this.mapsY = numY;
+
         this.shadowDepthTexture = device.createTexture({
             label: 'shadow-depth-texture',
             size: {
-                width: this.shadowPass.shadowTextureSize * scene.maxNumLights,
-                height: this.shadowPass.shadowTextureSize,
+                width: this.shadowPass.opts.shadowTextureSize * numX,
+                height: this.shadowPass.opts.shadowTextureSize * numY,
                 depthOrArrayLayers: 1,
             },
             usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
@@ -44,7 +52,7 @@ class ShadowRendererSceneExtension extends Extension<Scene> {
                 return;
             }
 
-            this.setup(this.__host, device);
+            this.setup(device);
             this.__host.shadowTextureView = this.shadowDepthTextureView;
         });
     }
@@ -118,8 +126,11 @@ class ShadowRendererExtension extends Extension<Renderer> {
             shadowEncoder.setPipeline(this.shadowPipeline);
             
             for (let index = 0; index < lights.length; index++) {
+                if (!lights[index].castShadow) {
+                    continue;
+                }
+
                 shadowEncoder.setBindGroup(0, lights[index].getBindGroup(this.__host.device));
-                // shadowEncoder.setBindGroup(0, camera.getBindGroup(this.__host.device));
 
                 const drawOp = new DrawOperation({
                     viewBgAccessor: lights[index] ,
@@ -129,10 +140,20 @@ class ShadowRendererExtension extends Extension<Renderer> {
                     vertexShader: null,
                     useMaterials: false,
                     renderer: this.__host,
-                    commandEncoder
+                    commandEncoder,
+                    filter: (object) => !object.isMesh() || object.castShadow
                 }, "shadowPass");
 
-                // shadowEncoder.setViewport(index * this.shadowPass.shadowTextureSize, 0, this.shadowPass.shadowTextureSize, this.shadowPass.shadowTextureSize, 0, 1);
+                const mx = index % this.shadowPass.sceneExtension.mapsX;
+                const my = Math.floor(index / this.shadowPass.sceneExtension.mapsX);
+
+                shadowEncoder.setViewport(
+                    this.shadowPass.opts.shadowTextureSize * mx,
+                    this.shadowPass.opts.shadowTextureSize * my,
+                    this.shadowPass.opts.shadowTextureSize,
+                    this.shadowPass.opts.shadowTextureSize,
+                    0, 1
+                );
                 this.__host.renderObjects(drawOp, scene);
             }
 
@@ -142,7 +163,7 @@ class ShadowRendererExtension extends Extension<Renderer> {
 }
 
 export default class ShadowPass {
-    constructor(public readonly shadowTextureSize: number) {}
+    constructor(public readonly opts: Readonly<ShadowPassOptions>) {}
 
     private _sceneExtension: ShadowRendererSceneExtension;
     static ShadowRendererSceneExtension = ShadowRendererSceneExtension;
@@ -166,3 +187,7 @@ export default class ShadowPass {
     }
 }
 
+interface ShadowPassOptions {
+    shadowTextureSize: number;
+    maxNumShadowMaps: number;
+}

@@ -6,8 +6,6 @@ import { mat4, vec3 } from "wgpu-matrix";
 import ShadowLight from "./ShadowLight";
 
 export default class DirectionalLight extends ShadowLight {
-    static readonly castShadow = true;
-
     @dirty declare decay: number;
     @dirty declare spotIntensity: number;
     @dirty declare intensity: number;
@@ -30,12 +28,14 @@ export default class DirectionalLight extends ShadowLight {
     get asBuffer() {
         const [x, y, z] = mat4.getTranslation(this.transform.asBuffer);
 
-        return new Float32Array([
-            x, y, z,
-            0,
+        const data = new Float32Array(Light.MEMORY_SIZE);
+
+        data.set([
+            x, y, z, 0,
             this.color.r,
             this.color.g,
             this.color.b,
+            0,
             Light.Types.Directional,
             this.intensity,
             this.decay,
@@ -44,8 +44,19 @@ export default class DirectionalLight extends ShadowLight {
             this.target.x,
             this.target.y,
             this.target.z,
-            this.spotIntensity
+            this.spotIntensity,
+            this.castShadow ? 1 : 0
         ]);
+
+        data.set(this.lightMatrix, 24);
+
+        return data;
+    }
+
+    get lightMatrix(): Float32Array {
+        const lightViewMatrix = mat4.lookAt(this.position.asBuffer, this.target.asBuffer, [0, 1, 0]);
+        const lightProjectionMatrix = mat4.ortho(-20, 20, -20, 20, 0.1, 200);
+        return mat4.multiply(lightProjectionMatrix, lightViewMatrix) as Float32Array;
     }
 
     get isDirty() {

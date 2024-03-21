@@ -17,6 +17,7 @@ export default class StandartMaterial extends BasicMaterial {
 
     protected static getFragmentShader(drawOp: DrawOperation): GPUFragmentState {
         const shadowExt = drawOp.scene.getExtension(ShadowPass.ShadowRendererSceneExtension);
+        console.log(shadowExt);
 
         return {
             module: drawOp.device.createShaderModule({ code: fragmentShader, }),
@@ -24,7 +25,10 @@ export default class StandartMaterial extends BasicMaterial {
             entryPoint: "main",
             constants: {
                 hasShadowMap: shadowExt ? 1 : 0,
-                shadowDepthTextureSize: shadowExt?.shadowPass.shadowTextureSize ?? 1
+                shadowDepthTextureSize: shadowExt?.shadowPass.opts.shadowTextureSize ?? 1,
+                mapsX: shadowExt?.mapsX ?? 1,
+                mapsY: shadowExt?.mapsY ?? 1,
+                maxNumLights: drawOp.scene.maxNumLights
             }
         };
     }

@@ -114,6 +114,7 @@ export default class GLTFLoader {
         object.position.set(translation[0], translation[1], translation[2]);
         object.rotation.set(rotation[0], rotation[1], rotation[2], rotation[3]);
         object.scale.set(scale[0], scale[1], scale[2]);
+        object.name = node.name;
 
         if (node.children) {
             for (const childIndex of node.children) {
