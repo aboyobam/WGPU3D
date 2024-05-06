@@ -51,7 +51,7 @@ export default class SunLight extends ShadowLight {
 
     get lightMatrix(): Float32Array {
         const lightViewMatrix = mat4.lookAt(this.position.asBuffer, this.target.asBuffer, [0, 1, 0]);
-        const lightProjectionMatrix = mat4.ortho(-20, 20, -20, 20, 1, 50);
+        const lightProjectionMatrix = mat4.ortho(-20, 20, -20, 20, .1, 250);
         return mat4.multiply(lightProjectionMatrix, lightViewMatrix) as Float32Array;
     }
 }

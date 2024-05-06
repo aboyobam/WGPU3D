@@ -41,7 +41,21 @@ export default class BasicMaterial extends Material {
     protected static getFragmentShader(drawOp: DrawOperation): GPUFragmentState {
         return {
             module: drawOp.device.createShaderModule({ code: fragmentShader }),
-            targets: [{ format: Renderer.presentationFormat }],
+            targets: [{
+                format: Renderer.presentationFormat,
+                blend: {
+                    alpha: {
+                        srcFactor: "src-alpha",
+                        dstFactor: "one-minus-src-alpha",
+                        operation: "add"
+                    },
+                    color: {
+                        srcFactor: "src-alpha",
+                        dstFactor: "one-minus-src-alpha",
+                        operation: "add"
+                    }
+                }
+            }],
             entryPoint: "main"
         };
     }

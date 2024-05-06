@@ -7,6 +7,7 @@ const __dirname = path.dirname(__filename);
 export default {
   entry: {
     example1: './examples/example1.ts',
+    test1: './examples/test1.ts',
     example2: './examples/example2.ts',
     "array-mesh": './examples/array-mesh.ts',
   },

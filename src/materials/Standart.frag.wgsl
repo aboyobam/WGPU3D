@@ -92,7 +92,7 @@ fn calcShadowVisibility(lightIndex: u32, fragPosition: vec4f) -> f32 {
     let shadowMapIndex = shadowMapIndices[lightIndex];
     let shadowMapX: u32 = shadowMapIndex % mapsX;
     let shadowMapY: u32 = shadowMapIndex / mapsX;
-    let ax = f32(mapsX + mapsY + maxNumLights); // DUMMY, so mapsX and mapsY are not unused
+    let axyy = f32(mapsX + mapsY + maxNumLights); // DUMMY, so mapsX and mapsY are not unused
 
     if (hasShadowMap == 0) {
         return 1.0;
@@ -120,7 +120,7 @@ fn calcShadowVisibility(lightIndex: u32, fragPosition: vec4f) -> f32 {
             let coord = vec2f((shadowPos.x + offset.x), shadowPos.y + offset.y);
 
             visibility += textureSampleCompare(
-                shadowMap, shadowSampler, coord, shadowPos.z - 0.005
+                shadowMap, shadowSampler, coord, shadowPos.z - 0.001
             ) / 9.0;
         }
     }

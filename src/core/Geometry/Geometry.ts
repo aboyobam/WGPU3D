@@ -6,7 +6,7 @@ export default class Geometry {
     readonly indexCount: number;
 
     constructor(private readonly vertices: Vertex[], private indices?: number[]) {
-        this.indexCount = vertices.length;
+        this.indexCount = vertices.length + (vertices.length % 4);
     }
 
     mount(device: GPUDevice) {
@@ -20,7 +20,7 @@ export default class Geometry {
             mappedAtCreation: true
         });
         const meshMapping = new Float32Array(meshBuffer.getMappedRange());
-        for (let i = 0; i < this.indexCount; i++) {
+        for (let i = 0; i < this.vertices.length; i++) {
             const pos = this.vertices[i];
             meshMapping.set(pos.position, 8 * i);
             meshMapping.set(pos.normal, 8 * i + 3);

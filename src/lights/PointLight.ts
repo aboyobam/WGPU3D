@@ -27,6 +27,7 @@ export default class PointLight extends Light {
             this.color.r,
             this.color.g,
             this.color.b,
+            0,
             Light.Types.Point,
             this.intensity,
             this.decay

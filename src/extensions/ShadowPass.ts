@@ -94,7 +94,10 @@ class ShadowRendererExtension extends Extension<Renderer> {
               depthCompare: 'less',
               format: 'depth32float',
             },
-            primitive: Renderer.primitiveState,
+            primitive: {
+                cullMode: "none",
+                topology: "triangle-list",
+            },
         });
 
         this.shadowPassDescriptor = {
@@ -116,7 +119,22 @@ class ShadowRendererExtension extends Extension<Renderer> {
                 return;
             }
 
-            const lights = Array.from(scene.readObjects(ShadowLight));
+            let lights: ShadowLight[];
+
+            if (this.shadowPass.opts.updateStrategy === "everyFrame") {
+                this.shadowPass.update();
+            } else if (this.shadowPass.opts.updateStrategy === "whenDirty") {
+                lights = Array.from(scene.readObjects(ShadowLight));
+                if (!lights.length || !lights.some(light => light.isDirty)) {
+                    return;
+                } 
+            } else if (this.shadowPass.opts.updateStrategy === "manual") {
+                if (!this.shadowPass.toUpdate?.length) {
+                    return;
+                }
+            }
+
+            lights ??= Array.from(scene.readObjects(ShadowLight));
             if (!lights.length) {
                 return;
             }
@@ -126,14 +144,15 @@ class ShadowRendererExtension extends Extension<Renderer> {
             shadowEncoder.setPipeline(this.shadowPipeline);
             
             for (let index = 0; index < lights.length; index++) {
-                if (!lights[index].castShadow) {
+                const light = lights[index];
+                if (!light.castShadow || !this.shadowPass.toUpdate.includes(light)) {
                     continue;
                 }
 
-                shadowEncoder.setBindGroup(0, lights[index].getBindGroup(this.__host.device));
+                shadowEncoder.setBindGroup(0, light.getBindGroup(this.__host.device));
 
                 const drawOp = new DrawOperation({
-                    viewBgAccessor: lights[index] ,
+                    viewBgAccessor: light,
                     device: this.__host.device,
                     renderPass: shadowEncoder,
                     scene: scene,
@@ -158,12 +177,18 @@ class ShadowRendererExtension extends Extension<Renderer> {
             }
 
             shadowEncoder.end();
+
+            this.shadowPass.toUpdate = null;
         });
     }
 }
 
 export default class ShadowPass {
-    constructor(public readonly opts: Readonly<ShadowPassOptions>) {}
+    constructor(public readonly opts: ShadowPassOptions) {
+        if (!opts.updateStrategy) {
+            opts.updateStrategy = "whenDirty";
+        }
+    }
 
     private _sceneExtension: ShadowRendererSceneExtension;
     static ShadowRendererSceneExtension = ShadowRendererSceneExtension;
@@ -185,9 +210,23 @@ export default class ShadowPass {
 
         return this._rendererExtension;
     }
+
+    toUpdate: ShadowLight[];
+
+    update(lights?: ShadowLight[]) {
+        if (!this.sceneExtension?.initialized) {
+            return;
+        }
+
+        if (!lights) {
+            lights = Array.from(this.sceneExtension.__host.readObjects(ShadowLight));
+        }
+
+        this.toUpdate = lights;    
+    }
 }
 
 interface ShadowPassOptions {
     shadowTextureSize: number;
-    //maxNumShadowMaps: number;
+    updateStrategy?: "everyFrame" | "manual" | "whenDirty"
 }

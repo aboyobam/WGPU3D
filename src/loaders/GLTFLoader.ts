@@ -82,7 +82,7 @@ export default class GLTFLoader {
         } else if ("mesh" in node) {
             const gltfMesh = this.gltf.meshes[node.mesh];
             object = await this.parseMesh(gltfMesh);
-        } else if ("KHR_lights_punctual" in node.extensions) {
+        } else if ("KHR_lights_punctual" in (node.extensions || {})) {
             const light = this.gltf.extensions["KHR_lights_punctual"].lights[node.extensions["KHR_lights_punctual"].light];
             if (light.type == "point") {
                 object = new PointLight(light.intensity, 0, new Color(light.color[0], light.color[1], light.color[2]));
@@ -103,12 +103,16 @@ export default class GLTFLoader {
                 const intensity = light.intensity;
                 const sunLight = new SunLight(intensity, color, new Vector3(0, 0, 0));
                 const [tx, ty, tz] = vec3.transformQuat([0, 0, -1], rotation);
+                console.log(tx, ty, tz, "set target");
+                
                 sunLight.target.set(tx, ty, tz);
                 object = sunLight;
             } else {
                 console.log("Unsupported light type", light.type);
                 object = new Object3D();
             }
+        } else {
+            object = new Object3D();
         }
 
         object.position.set(translation[0], translation[1], translation[2]);
@@ -133,7 +137,7 @@ export default class GLTFLoader {
             const allMaterials: Material[] = [];
 
             for (const primitive of mesh.primitives) {
-                const prim = this.parsePrimitive(primitive);
+                const prim = this.parsePrimitive(primitive);                
                 const material = await this.parseMaterial(primitive.material);
                 const vertices = this.primitiveToVertices(prim);
                 allVertices.push(vertices);

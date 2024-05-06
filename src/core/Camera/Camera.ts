@@ -18,7 +18,7 @@ export default class Camera extends Object3D implements UniformBindGroup {
             entries: [
                 {
                     binding: 0,
-                    visibility: GPUShaderStage.VERTEX,
+                    visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
                     buffer: {
                         type: "uniform"
                     }
