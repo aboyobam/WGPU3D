@@ -18,7 +18,7 @@ navigator.gpu.requestAdapter().then(async adapter => {
     const scene = await GLTFLoader.fromURL("/scene2.gltf", {
         BaseMaterialClass: StandartMaterial,
         fallbackMaterial: new BasicMaterial({ color: new Color(1, 1, 1) }),
-        maxNumLights: 5,
+        maxNumLights: 4,
     });
 
     const [camera] = scene.readObjects(PerspectiveCamera);
@@ -45,10 +45,16 @@ navigator.gpu.requestAdapter().then(async adapter => {
     camera.aspect = canvas.width / canvas.height;
     const renderer = new Renderer(canvas, device);
     const shadowPass = new ShadowPass({
-        shadowTextureSize: 1024,
+        shadowTextureSize: 4096,
+        updateStrategy: "everyFrame"
     });
     renderer.addExtension(shadowPass.rendererExtension);
     scene.addExtension(shadowPass.sceneExtension);
+
+    console.log(camera.position.asBuffer);
+    console.log(camera.rotation.asQuat);
+    
+    
 
     function draw() {
         renderer.render(camera, scene);

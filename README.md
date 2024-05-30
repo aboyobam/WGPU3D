@@ -22,3 +22,6 @@ Finally, run any static webserver inside the public directory and open any examp
 ```sh
 npx serve
 ```
+
+## Documentation
+Open [Documentation](api.md)
